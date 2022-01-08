@@ -79,7 +79,7 @@ public class GameController {
             model.addAttribute("lastSongs", firstMusicList.size());
             model.addAttribute("nextSong", firstMusicList.get(randomMusic));
             firstMusicList.remove(randomMusic);
-            if (firstMusicList.isEmpty()){
+            if (firstMusicList.isEmpty()) {
                 firstPlayerDone = true;
             }
             firstPlayerRight++;
@@ -122,7 +122,7 @@ public class GameController {
             model.addAttribute("lastSongs", firstMusicList.size());
             model.addAttribute("nextSong", firstMusicList.get(randomMusic));
             firstMusicList.remove(randomMusic);
-            if (firstMusicList.isEmpty()){
+            if (firstMusicList.isEmpty()) {
                 firstPlayerDone = true;
             }
             firstPlayerFalse++;
