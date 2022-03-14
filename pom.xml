@@ -10,8 +10,8 @@
     </parent>
     <groupId>com.music-game</groupId>
     <artifactId>v1</artifactId>
-    <version>0.0.1-SNAPSHOT</version>
-    <packaging>war</packaging>
+    <version>1-SNAPSHOT</version>
+    <packaging>jar</packaging>
     <name>music-catcher</name>
     <description>Music game</description>
     <properties>
@@ -42,9 +42,8 @@
     <build>
         <plugins>
             <plugin>
-                <groupId>com.heroku.sdk</groupId>
-                <artifactId>heroku-maven-plugin</artifactId>
-                <version>3.0.3</version>
+                <groupId>org.springframework.boot</groupId>
+                <artifactId>spring-boot-maven-plugin</artifactId>
             </plugin>
         </plugins>
     </build>
