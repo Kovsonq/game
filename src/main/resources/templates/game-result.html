@@ -31,8 +31,8 @@
             <th scope="col" style="color: darkred">Wrong</th>
         </tr>
         </thead>
-        <tbody th:each="team : ${teams}">
-        <tr>
+        <tbody>
+        <tr th:each="team : ${teams}">
             <th scope="row" th:text="${team.index}"></th>
             <td th:text="${team.name}"></td>
             <td th:text="${#lists.size(team.rightSongList)}" style="color: forestgreen"></td>

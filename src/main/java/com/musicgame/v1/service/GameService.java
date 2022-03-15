@@ -1,20 +1,31 @@
 package com.musicgame.v1.service;
 
+import com.musicgame.v1.exception.SongListCreatingException;
+import com.musicgame.v1.exception.TeamNotFoundException;
+import com.musicgame.v1.exception.TeamsCreatingException;
+import com.musicgame.v1.exception.WinnerNotFoundException;
 import com.musicgame.v1.model.Team;
 import org.springframework.stereotype.Service;
+import org.springframework.web.context.annotation.SessionScope;
 
-import java.util.*;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 @Service
+@SessionScope
 public class GameService {
 
     private final List<Team> teams = new ArrayList<>();
 
-    public List<Team> createTeams(int teamsNumber) {
+    public List<Team> createTeams(int teamsNumber) throws TeamsCreatingException {
         if (teamsNumber <= 0 || teamsNumber > 10) {
-            return null;
+            throw new TeamsCreatingException("Wrong number of teams entered. It should be in the range 1-10.");
         }
         return Stream.generate(this::createTeam)
                 .limit(teamsNumber)
@@ -28,46 +39,61 @@ public class GameService {
         return team;
     }
 
-    public List<Team> setTeamsName(List<Team> teams, List<String> teamsName) {
-        if (teams.size() == teamsName.size()) {
-            for (Team team : teams) {
-                team.setName(teamsName.get(team.getIndex() - 1));
-            }
-            return teams;
-        } else return null;
+    public void setTeamsName(List<Team> teams, List<String> teamsName) throws TeamsCreatingException {
+        if (!isNamesCorrect(teamsName)) {
+            throw new TeamsCreatingException("All team names should be different and not blank try again.");
+        }
+
+        if (teams.size() != teamsName.size()) {
+            throw new TeamsCreatingException("Teams number and team names number is different, try again");
+        }
+        teams.forEach(team -> team.setName(teamsName.get(team.getIndex() - 1)));
     }
 
-    public Team getTeamByName(String teamName) {
+    private boolean isNamesCorrect(List<String> teamsName) {
+        Set<String> names = new HashSet<>();
+        for (String teamName : teamsName) {
+            if (!teamName.isBlank()) {
+                names.add(teamName);
+            }
+        }
+        return names.size() == teamsName.size();
+    }
+
+    public Team getTeamByName(String teamName) throws TeamNotFoundException {
         return this.teams.stream()
                 .filter(team -> team.getName().equals(teamName))
                 .findFirst()
-                .orElse(null);
+                .orElseThrow(() -> new TeamNotFoundException("Can't find team by name."));
     }
 
-    public List<Team> separateSongListByTeams(final List<Team> teams, final String sourceText) {
-        List<String> sourceList = Arrays.stream(sourceText.split("\\r?\\n"))
+    public List<Team> separateSongListByTeams(final List<Team> teams, final String sourceText) throws SongListCreatingException {
+        List<String> sourceSongList = Arrays.stream(sourceText.split("\\r?\\n"))
                 .collect(Collectors.toList());
-        List<String> clearList = sourceList.stream()
-                .filter(song -> !song.isEmpty())
+        List<String> clearSongList = sourceSongList.stream()
+                .filter(song -> !song.isBlank())
                 .distinct()
                 .collect(Collectors.toList());
 
-        List<String> processedSongs = checkAndProcessSongList(clearList, teams.size());
-        if (processedSongs == null) {
-            return null;
+        List<String> processedSongList = checkAndProcessSongList(clearSongList, teams.size());
+        if (processedSongList == null) {
+            throw new SongListCreatingException("Song list should contain more than teams number songs. " +
+                    "Song shouldn't be blank.");
         }
 
-        int songsPerTeam = processedSongs.size() / teams.size();
+        int songsPerTeam = processedSongList.size() / teams.size();
         for (Team team : teams) {
-            processedSongs.stream().limit(songsPerTeam).forEach(team::addSong);
-            processedSongs.removeAll(team.getSongList());
+            processedSongList.stream()
+                    .limit(songsPerTeam)
+                    .forEach(team::addSong);
+            processedSongList.removeAll(team.getSongList());
         }
         return teams;
     }
 
-    private List<String> checkAndProcessSongList(final List<String> songs, int teamsNumber) {
+    private List<String> checkAndProcessSongList(final List<String> songs, int teamsNumber) throws SongListCreatingException {
         if (songs == null || songs.isEmpty() || songs.size() < teamsNumber) {
-            return null;
+            throw new SongListCreatingException("Song list is empty or has less than teams number songs. Try again.");
         }
         return songs.stream()
                 .limit(songs.size() - songs.size() % teamsNumber)
@@ -93,40 +119,26 @@ public class GameService {
         this.teams.clear();
     }
 
-    public String getWinner() {
-        String possibleWinnerName = this.teams.stream()
+    public String getWinner() throws WinnerNotFoundException {
+        Team possibleWinner = this.teams.stream()
                 .sorted()
                 .findFirst()
-                .map(Team::getName)
-                .orElse(null);
+                .orElseThrow(() -> new WinnerNotFoundException("Winner not found. Program error."));
 
-        Team possibleWinner = getTeamByName(possibleWinnerName);
         int rightAnswerWinner = possibleWinner.getRightSongList().size();
-        int wrongAnswerWinner = possibleWinner.getFalseSongList().size();
-
         List<Team> rightAnswerWinners = this.teams.stream()
                 .filter(team -> team.getRightSongList().size() == rightAnswerWinner)
                 .collect(Collectors.toList());
 
         if (rightAnswerWinners.size() > 1) {
-            List<Team> wrongAnswerWinners = rightAnswerWinners.stream()
-                    .filter(team -> team.getFalseSongList().size() == wrongAnswerWinner)
-                    .collect(Collectors.toList());
-
-            if (wrongAnswerWinners.size() > 1){
-                return "DRAW";
-            } else {
-                return wrongAnswerWinners.stream()
-                        .min(Comparator.comparingInt(team -> team.getFalseSongList().size()))
-                        .map(Team::getName)
-                        .orElse(null);
-            }
+            return "DRAW";
         } else {
-            return possibleWinnerName;
+            return possibleWinner.getName();
         }
     }
 
     public List<Team> getTeams() {
         return teams;
     }
+
 }

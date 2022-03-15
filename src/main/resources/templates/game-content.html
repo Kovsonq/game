@@ -18,11 +18,14 @@
     </div>
 </nav>
 
+<div class="alert alert-warning" th:if="${error}" role="alert" th:text="${error}">
+</div>
+
 <form action="#" th:action="@{/game/overview}" method="post">
     <div class="form-group text-center">
         <h4 style="margin-top: 1em">Input the list of songs (or some other list) separated by new line (enter):</h4>
-        <textarea th:value="${sourceText}" name="sourceText" class="form-control" id="sourceText" rows="8" required></textarea>
-
+        <textarea th:value="${sourceText}" name="sourceText" class="form-control" id="sourceText" rows="7"></textarea>
+        <h4 style="margin-top: 1em">Or just press 'continue' to use preset list (russian lang songs)</h4>
         <button type="submit" class="btn btn-success text-center" style="margin-top: 1em">Continue</button>
     </div>
 </form>
