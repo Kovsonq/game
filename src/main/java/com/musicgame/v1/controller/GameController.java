@@ -7,12 +7,14 @@ import com.musicgame.v1.exception.WinnerNotFoundException;
 import com.musicgame.v1.model.Team;
 import com.musicgame.v1.service.GameService;
 import com.musicgame.v1.utils.DefaultSongLists;
+import com.musicgame.v1.utils.StatisticUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.context.request.RequestContextHolder;
 
 import java.util.Collections;
 import java.util.List;
@@ -20,10 +22,12 @@ import java.util.List;
 @Controller
 public class GameController {
 
+    private final StatisticUtil statisticUtil;
     private final GameService gameService;
 
     @Autowired
-    public GameController(GameService gameService) {
+    public GameController(StatisticUtil statisticUtil, GameService gameService) {
+        this.statisticUtil = statisticUtil;
         this.gameService = gameService;
     }
 
@@ -42,10 +46,14 @@ public class GameController {
 
     @PostMapping("/game/content")
     public String setTeamsName(@RequestParam List<String> sourceTeamsName, Model model) {
+        List<Team> teams = gameService.getTeams();
+        if (teams == null || teams.isEmpty()) {
+            return "index";
+        }
         try {
-            gameService.setTeamsName(gameService.getTeams(), sourceTeamsName);
+            gameService.setTeamsName(teams, sourceTeamsName);
         } catch (TeamsCreatingException e) {
-            List<Team> teams = gameService.getTeams();
+
             model.addAttribute("teams", teams);
             model.addAttribute("error", e.getMessage());
             return "teams-name";
@@ -117,10 +125,18 @@ public class GameController {
         return "redirect:/game/progress";
     }
 
-    @GetMapping("/*")
+    @GetMapping("/")
     public String restartGame() {
+        statisticUtil.addVisitor(RequestContextHolder.currentRequestAttributes().getSessionId());
         gameService.restartGame();
         return "index";
+    }
+
+    @GetMapping("/visitors")
+    public String showVisitors(Model model) {
+        model.addAttribute("visitorsNumber", statisticUtil.viewVisitors());
+        model.addAttribute("visitors", statisticUtil.getVisitors());
+        return "statistic-visitors";
     }
 
 }

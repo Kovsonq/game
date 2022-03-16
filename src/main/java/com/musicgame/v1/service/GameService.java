@@ -18,7 +18,6 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 @Service
-@SessionScope
 public class GameService {
 
     private final List<Team> teams = new ArrayList<>();
